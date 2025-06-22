@@ -14,47 +14,48 @@ struct WorkTime {
 fn main() {
     let settings = get_settings();
 
-    let start = &settings[2].start;
-    let end = &settings[2].end;
+    let start_string = &settings[2].start;
+    let end_string = &settings[2].end;
 
-    let parsed_start = parse_time(&start);
-    let parsed_end = parse_time(&end);
+    let start = parse_time(&start_string);
+    let end = parse_time(&end_string);
 
     loop {
         let now = Local::now().time();
+        let current_minute = now.minute();
 
-        if now < parsed_end && now > parsed_start {
-            if now.minute() == 0 || now.minute() == 30 {
+        if now > start && now < end {
+            if current_minute == 0 || current_minute == 30 {
                 send_alert();
             }
-
-            let sleep_until_target = if now.minute() < 30 {
-                (30 - now.minute()) as u64 * 60
-            } else { 
-                (60 - now.minute()) as u64 * 60
-            };
-
-            println!("sleep for {} seconds", sleep_until_target);
-            sleep(StdDuration::from_secs(sleep_until_target));
+            wait(current_minute);
         } else {
             break;
         }
     }
 }
 
+fn wait(current_minute: u32) -> () {
+    let sleep_until_target = if current_minute < 30 {
+        (30 - current_minute) as u64 * 60
+    } else {
+        (60 - current_minute) as u64 * 60
+    };
+
+    println!("sleep for {} seconds", sleep_until_target);
+    sleep(StdDuration::from_secs(sleep_until_target));
+}
+
 fn parse_time(time_string: &str) -> NaiveTime {
-    return NaiveTime::parse_from_str(&time_string, "%H:%M").expect("Failed to parse time");
+    NaiveTime::parse_from_str(&time_string, "%H:%M").expect("Failed to parse time")
 }
 
 fn get_settings() -> Vec<WorkTime> {
     let file_content = fs::read_to_string("src/worktimes.json").expect("Failed to read");
-
-    let response: Vec<WorkTime> = serde_json::from_str(&file_content).expect("Failed to parse");
-
-    return response;
+    serde_json::from_str(&file_content).expect("Failed to parse")
 }
 
-fn send_alert() {
+fn send_alert() -> () {
     println!("alert");
     Toast::new(Toast::POWERSHELL_APP_ID)
         .title("Time to take a seat!")
