@@ -15,8 +15,8 @@ fn main() {
     let settings = get_settings();
 
     let start_time = Local::now().time();
-    let full_hour_mark = start_time.minute();
-    let half_hour_mark = (full_hour_mark + 30) % 60;
+    let mut full_hour_mark = start_time.minute();
+    let mut half_hour_mark = (full_hour_mark + 30) % 60;
 
     loop {
         let now = Local::now().time();
@@ -28,10 +28,13 @@ fn main() {
             }
             wait_for_next_interval(current_minute);
         } else {
-            if wait_for_next_block(&now, &settings) {
-                continue;
+            if let Some(_start_time) = wait_for_next_block(&now, &settings) {
+                full_hour_mark = _start_time.minute();
+                half_hour_mark = (full_hour_mark + 30) % 60;
+                continue; 
+            } else {
+                break;
             }
-            break;
         }
     }
 }
@@ -58,16 +61,18 @@ fn wait_for_next_interval(current_minute: u32) -> () {
     sleep(StdDuration::from_secs(sleep_until_target));
 }
 
-fn wait_for_next_block(time: &NaiveTime, settings: &[WorkTime]) -> bool {
+fn wait_for_next_block(time: &NaiveTime, settings: &[WorkTime]) -> Option<NaiveTime> {
     for block in settings {
         let start = parse_time(&block.start);
         if time <= &start {
             let duration = start.signed_duration_since(*time);
-            sleep(StdDuration::from_secs(duration.num_seconds() as u64));
-            return true;
+            if duration > chrono::Duration::zero() {
+                sleep(StdDuration::from_secs(duration.num_seconds() as u64));
+            }
+            return Some(start);
         }
     }
-    false
+    None
 }
 
 fn parse_time(time_string: &str) -> NaiveTime {
