@@ -7,16 +7,15 @@ use winrt_notification::{Duration, Sound, Toast};
 
 #[derive(Debug, Deserialize)]
 struct WorkTime {
-    title: String,
-    range: Vec<String>,
-    active: u8,
+    start: String,
+    end: String,
 }
 
 fn main() {
     let settings = get_settings();
 
-    let start = &settings[3].range[0];
-    let end = &settings[3].range[1];
+    let start = &settings[2].start;
+    let end = &settings[2].end;
 
     let parsed_start = parse_time(&start);
     let parsed_end = parse_time(&end);
