@@ -1,3 +1,5 @@
+use chrono::Local;
+use chrono::NaiveTime;
 use serde::Deserialize;
 use std::fs;
 use std::thread::sleep;
@@ -12,15 +14,19 @@ struct WorkTime {
 }
 
 fn main() {
-    
     let settings = get_settings();
 
     let start = &settings[0].range[0];
     let end = &settings[0].range[1];
 
-    println!("{:?}", start);
-    println!("{:?}", end);
-          
+    let parsed_start = parse_time(&start);
+    let parsed_end = parse_time(&end);
+    let now = Local::now().format("%H:%M");
+
+    println!("{:?}", parsed_start);
+    println!("{:?}", parsed_end);
+    println!("{:?}", now);
+
     let mut second: u8 = 0;
     while second < 60 {
         if second == 10 {
@@ -29,6 +35,11 @@ fn main() {
         sleep(StdDuration::from_secs(1));
         second += 1;
     }
+}
+
+fn parse_time(time_string: &str) -> NaiveTime {
+    
+    return NaiveTime::parse_from_str(&time_string, "%H:%M").expect("Failed to parse time");
 }
 
 fn get_settings() -> Vec<WorkTime> {
