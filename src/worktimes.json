@@ -1,0 +1,17 @@
+[
+  {
+    "title": "morning",
+    "range": ["09:00", "12:15"],
+    "active": 1
+  },
+  {
+    "title": "break",
+    "range": ["12:15", "13:00"],
+    "active": 0
+  },
+  {
+    "title": "afternoon",
+    "range": ["13:00", "17:30"],
+    "active": 1
+  }
+]
