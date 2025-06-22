@@ -1,9 +1,8 @@
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::fs;
 use std::thread::sleep;
 use std::time::Duration as StdDuration;
 use winrt_notification::{Duration, Sound, Toast};
-use std::fs;
 
 #[derive(Debug, Deserialize)]
 struct WorkTime {
@@ -13,14 +12,15 @@ struct WorkTime {
 }
 
 fn main() {
-    let file_content = fs::read_to_string("src/worktimes.json")
-        .expect("Failed to read");
+    
+    let settings = get_settings();
 
-    let response: Vec<WorkTime> = serde_json::from_str(&file_content)
-        .expect("Failed to parse");
+    let start = &settings[0].range[0];
+    let end = &settings[0].range[1];
 
-    println!("{response:#?}");
-
+    println!("{:?}", start);
+    println!("{:?}", end);
+          
     let mut second: u8 = 0;
     while second < 60 {
         if second == 10 {
@@ -29,6 +29,14 @@ fn main() {
         sleep(StdDuration::from_secs(1));
         second += 1;
     }
+}
+
+fn get_settings() -> Vec<WorkTime> {
+    let file_content = fs::read_to_string("src/worktimes.json").expect("Failed to read");
+
+    let response: Vec<WorkTime> = serde_json::from_str(&file_content).expect("Failed to parse");
+
+    return response;
 }
 
 fn send_alert() {
