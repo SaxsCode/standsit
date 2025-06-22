@@ -26,8 +26,11 @@ fn main() {
             if current_minute == full_hour_mark || current_minute == half_hour_mark {
                 send_alert();
             }
-            wait(current_minute);
+            wait_for_next_interval(current_minute);
         } else {
+            if wait_for_next_block(&now, &settings) {
+                continue;
+            }
             break;
         }
     }
@@ -37,14 +40,14 @@ fn inside_block(now: &NaiveTime, settings: &[WorkTime]) -> bool {
     for block in settings {
         let start = parse_time(&block.start);
         let end = parse_time(&block.end);
-        if now > &start && now < &end {
+        if now >= &start && now <= &end {
             return true;
         }
     }
     false
 }
 
-fn wait(current_minute: u32) -> () {
+fn wait_for_next_interval(current_minute: u32) -> () {
     let sleep_until_target = if current_minute < 30 {
         (30 - current_minute) as u64 * 60
     } else {
@@ -53,6 +56,18 @@ fn wait(current_minute: u32) -> () {
 
     println!("sleep for {} seconds", sleep_until_target);
     sleep(StdDuration::from_secs(sleep_until_target));
+}
+
+fn wait_for_next_block(time: &NaiveTime, settings: &[WorkTime]) -> bool {
+    for block in settings {
+        let start = parse_time(&block.start);
+        if time <= &start {
+            let duration = start.signed_duration_since(*time);
+            sleep(StdDuration::from_secs(duration.num_seconds() as u64));
+            return true;
+        }
+    }
+    false
 }
 
 fn parse_time(time_string: &str) -> NaiveTime {
