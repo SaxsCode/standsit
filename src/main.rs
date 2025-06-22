@@ -1,5 +1,4 @@
-use chrono::Local;
-use chrono::NaiveTime;
+use chrono::{Local, NaiveTime, Timelike};
 use serde::Deserialize;
 use std::fs;
 use std::thread::sleep;
@@ -16,29 +15,35 @@ struct WorkTime {
 fn main() {
     let settings = get_settings();
 
-    let start = &settings[0].range[0];
-    let end = &settings[0].range[1];
+    let start = &settings[3].range[0];
+    let end = &settings[3].range[1];
 
     let parsed_start = parse_time(&start);
     let parsed_end = parse_time(&end);
-    let now = Local::now().format("%H:%M");
 
-    println!("{:?}", parsed_start);
-    println!("{:?}", parsed_end);
-    println!("{:?}", now);
+    loop {
+        let now = Local::now().time();
 
-    let mut second: u8 = 0;
-    while second < 60 {
-        if second == 10 {
-            send_alert();
+        if now < parsed_end && now > parsed_start {
+            if now.minute() == 0 || now.minute() == 30 {
+                send_alert();
+            }
+
+            let sleep_until_target = if now.minute() < 30 {
+                (30 - now.minute()) as u64 * 60
+            } else { 
+                (60 - now.minute()) as u64 * 60
+            };
+
+            println!("sleep for {} seconds", sleep_until_target);
+            sleep(StdDuration::from_secs(sleep_until_target));
+        } else {
+            break;
         }
-        sleep(StdDuration::from_secs(1));
-        second += 1;
     }
 }
 
 fn parse_time(time_string: &str) -> NaiveTime {
-    
     return NaiveTime::parse_from_str(&time_string, "%H:%M").expect("Failed to parse time");
 }
 
@@ -51,6 +56,7 @@ fn get_settings() -> Vec<WorkTime> {
 }
 
 fn send_alert() {
+    println!("alert");
     Toast::new(Toast::POWERSHELL_APP_ID)
         .title("Time to take a seat!")
         .sound(Some(Sound::SMS))
