@@ -14,18 +14,16 @@ struct WorkTime {
 fn main() {
     let settings = get_settings();
 
-    let start_string = &settings[2].start;
-    let end_string = &settings[2].end;
-
-    let start = parse_time(&start_string);
-    let end = parse_time(&end_string);
+    let start_time = Local::now().time();
+    let full_hour_mark = start_time.minute();
+    let half_hour_mark = (full_hour_mark + 30) % 60;
 
     loop {
         let now = Local::now().time();
         let current_minute = now.minute();
 
-        if now > start && now < end {
-            if current_minute == 0 || current_minute == 30 {
+        if inside_block(&now, &settings) {
+            if current_minute == full_hour_mark || current_minute == half_hour_mark {
                 send_alert();
             }
             wait(current_minute);
@@ -33,6 +31,17 @@ fn main() {
             break;
         }
     }
+}
+
+fn inside_block(now: &NaiveTime, settings: &[WorkTime]) -> bool {
+    for block in settings {
+        let start = parse_time(&block.start);
+        let end = parse_time(&block.end);
+        if now > &start && now < &end {
+            return true;
+        }
+    }
+    false
 }
 
 fn wait(current_minute: u32) -> () {
