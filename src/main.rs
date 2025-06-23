@@ -86,7 +86,7 @@ fn parse_time(time_string: &str) -> NaiveTime {
 }
 
 fn get_settings() -> Vec<Schedule> {
-    let file_content = fs::read_to_string("src/schedule.json").expect("Failed to read");
+    let file_content = fs::read_to_string("schedule.json").expect("Failed to read");
     serde_json::from_str(&file_content).expect("Failed to parse")
 }
 
