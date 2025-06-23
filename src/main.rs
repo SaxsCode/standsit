@@ -5,6 +5,20 @@ use std::thread::sleep;
 use std::time::Duration as StdDuration;
 use winrt_notification::{Duration, Sound, Toast};
 
+enum MessageType {
+    Sit,
+    Stand,
+}
+
+impl MessageType {
+    fn toggle(&self) -> MessageType {
+        match self {
+            MessageType::Sit => MessageType::Stand,
+            MessageType::Stand => MessageType::Sit,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct WorkTime {
     interval: u64,
@@ -14,14 +28,17 @@ struct WorkTime {
 
 fn main() {
     let settings = get_settings();
+    let mut message_type = MessageType::Sit;
 
     loop {
         let now = Local::now().time();
 
         let interval:u64 = if let Some(block_interval) = inside_block(&now, &settings) {
-            send_alert();
+            send_alert(&message_type);
+            message_type = message_type.toggle();
             block_interval
         } else {
+            message_type = MessageType::Sit;
             match wait_for_next_block(&now, &settings) {
                 Some(next_interval) => next_interval,
                 None => break,
@@ -43,8 +60,8 @@ fn inside_block(now: &NaiveTime, settings: &[WorkTime]) -> Option<u64> {
     None
 }
 
-fn wait_for_next_interval(interval: u64) -> () {
-    let sleep_in_seconds:u64 = &interval * 60;
+fn wait_for_next_interval(interval: u64) {
+    let sleep_in_seconds:u64 = interval * 60;
     sleep(StdDuration::from_secs(sleep_in_seconds));
 }
 
@@ -73,9 +90,15 @@ fn get_settings() -> Vec<WorkTime> {
     serde_json::from_str(&file_content).expect("Failed to parse")
 }
 
-fn send_alert() -> () {
+fn send_alert(message_type: &MessageType) {
+
+    let title = match message_type {
+        MessageType::Sit => "Time to take a seat!",
+        MessageType::Stand => "Time to stand up!",
+    };
+
     Toast::new(Toast::POWERSHELL_APP_ID)
-        .title("Time to take a seat!")
+        .title(title)
         .sound(Some(Sound::SMS))
         .duration(Duration::Short)
         .show()
