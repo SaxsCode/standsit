@@ -20,7 +20,7 @@ impl MessageType {
 }
 
 #[derive(Debug, Deserialize)]
-struct WorkTime {
+struct Schedule {
     interval: u64,
     start: String,
     end: String,
@@ -49,7 +49,7 @@ fn main() {
     }
 }
 
-fn inside_block(now: &NaiveTime, settings: &[WorkTime]) -> Option<u64> {
+fn inside_block(now: &NaiveTime, settings: &[Schedule]) -> Option<u64> {
     for block in settings {
         let start = parse_time(&block.start);
         let end = parse_time(&block.end);
@@ -65,7 +65,7 @@ fn wait_for_next_interval(interval: u64) {
     sleep(StdDuration::from_secs(sleep_in_seconds));
 }
 
-fn wait_for_next_block(time: &NaiveTime, settings: &[WorkTime]) -> Option<u64> {
+fn wait_for_next_block(time: &NaiveTime, settings: &[Schedule]) -> Option<u64> {
     for block in settings {
         let start = parse_time(&block.start);
         let interval = block.interval;
@@ -85,8 +85,8 @@ fn parse_time(time_string: &str) -> NaiveTime {
     NaiveTime::parse_from_str(&time_string, "%H:%M").expect("Failed to parse time")
 }
 
-fn get_settings() -> Vec<WorkTime> {
-    let file_content = fs::read_to_string("src/worktimes.json").expect("Failed to read");
+fn get_settings() -> Vec<Schedule> {
+    let file_content = fs::read_to_string("src/schedule.json").expect("Failed to read");
     serde_json::from_str(&file_content).expect("Failed to parse")
 }
 
