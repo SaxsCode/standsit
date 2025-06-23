@@ -1,4 +1,4 @@
-use chrono::{Local, NaiveTime, Timelike};
+use chrono::{Local, NaiveTime};
 use serde::Deserialize;
 use std::fs;
 use std::thread::sleep;
@@ -7,6 +7,7 @@ use winrt_notification::{Duration, Sound, Toast};
 
 #[derive(Debug, Deserialize)]
 struct WorkTime {
+    interval: u64,
     start: String,
     end: String,
 }
@@ -14,62 +15,50 @@ struct WorkTime {
 fn main() {
     let settings = get_settings();
 
-    let start_time = Local::now().time();
-    let mut full_hour_mark = start_time.minute();
-    let mut half_hour_mark = (full_hour_mark + 30) % 60;
-
     loop {
         let now = Local::now().time();
-        let current_minute = now.minute();
 
-        if inside_block(&now, &settings) {
-            if current_minute == full_hour_mark || current_minute == half_hour_mark {
-                send_alert();
-            }
-            wait_for_next_interval(current_minute);
+        let interval:u64 = if let Some(block_interval) = inside_block(&now, &settings) {
+            send_alert();
+            block_interval
         } else {
-            if let Some(_start_time) = wait_for_next_block(&now, &settings) {
-                full_hour_mark = _start_time.minute();
-                half_hour_mark = (full_hour_mark + 30) % 60;
-                continue; 
-            } else {
-                break;
+            match wait_for_next_block(&now, &settings) {
+                Some(next_interval) => next_interval,
+                None => break,
             }
-        }
+        };
+
+        wait_for_next_interval(interval);
     }
 }
 
-fn inside_block(now: &NaiveTime, settings: &[WorkTime]) -> bool {
+fn inside_block(now: &NaiveTime, settings: &[WorkTime]) -> Option<u64> {
     for block in settings {
         let start = parse_time(&block.start);
         let end = parse_time(&block.end);
         if now >= &start && now <= &end {
-            return true;
+            return Some(block.interval);
         }
     }
-    false
+    None
 }
 
-fn wait_for_next_interval(current_minute: u32) -> () {
-    let sleep_until_target = if current_minute < 30 {
-        (30 - current_minute) as u64 * 60
-    } else {
-        (60 - current_minute) as u64 * 60
-    };
-
-    println!("sleep for {} seconds", sleep_until_target);
-    sleep(StdDuration::from_secs(sleep_until_target));
+fn wait_for_next_interval(interval: u64) -> () {
+    let sleep_in_seconds:u64 = &interval * 60;
+    sleep(StdDuration::from_secs(sleep_in_seconds));
 }
 
-fn wait_for_next_block(time: &NaiveTime, settings: &[WorkTime]) -> Option<NaiveTime> {
+fn wait_for_next_block(time: &NaiveTime, settings: &[WorkTime]) -> Option<u64> {
     for block in settings {
         let start = parse_time(&block.start);
+        let interval = block.interval;
+
         if time <= &start {
             let duration = start.signed_duration_since(*time);
             if duration > chrono::Duration::zero() {
                 sleep(StdDuration::from_secs(duration.num_seconds() as u64));
             }
-            return Some(start);
+            return Some(interval);
         }
     }
     None
@@ -85,7 +74,6 @@ fn get_settings() -> Vec<WorkTime> {
 }
 
 fn send_alert() -> () {
-    println!("alert");
     Toast::new(Toast::POWERSHELL_APP_ID)
         .title("Time to take a seat!")
         .sound(Some(Sound::SMS))
