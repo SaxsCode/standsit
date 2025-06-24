@@ -18,7 +18,7 @@ A simple Windows desktop application that reminds you to alternate between sitti
 ### 1. Download or Build
 
 **Option A: Download Executable**
-- Download the latest release from your release page (add your link).
+- Download the latest release from your release page ([v.1.0.0](https://github.com/SaxsCode/standsit/releases/tag/v1.0.0)).
 - Place the `standsit.exe` and `schedule.json` in the same folder.
 
 **Option B: Build from Source**
