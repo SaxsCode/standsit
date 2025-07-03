@@ -24,6 +24,8 @@ struct Schedule {
     interval: u64,
     start: String,
     end: String,
+    sit: String,
+    stand: String,
 }
 
 fn main() {
@@ -92,9 +94,12 @@ fn get_settings() -> Vec<Schedule> {
 
 fn send_alert(message_type: &MessageType) {
 
+    let mut sitMessage: &str = "Time to take a seat!";
+    let mut standMessage: &str = "Time to stand up!";
+
     let title = match message_type {
-        MessageType::Sit => "Time to take a seat!",
-        MessageType::Stand => "Time to stand up!",
+        MessageType::Sit => sitMessage,
+        MessageType::Stand => standMessage,
     };
 
     Toast::new(Toast::POWERSHELL_APP_ID)
